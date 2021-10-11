@@ -1,5 +1,11 @@
 {
 
-   "extends": "@silvermine/eslint-config/node-tests"
+   "extends": "@silvermine/eslint-config/node-tests",
 
+   "rules": {
+      "max-depth": ["error", 6],
+      "complexity": "off",
+      "@silvermine/silvermine/call-indentation": "off"
+
+   }
 }

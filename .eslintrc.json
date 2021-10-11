@@ -1,5 +1,10 @@
 {
 
-   "extends": "@silvermine/eslint-config/browser"
+   "extends": "@silvermine/eslint-config/browser",
+
+   "rules": {
+      "max-depth": ["error", 6],
+      "complexity": "off"
+   }
 
 }

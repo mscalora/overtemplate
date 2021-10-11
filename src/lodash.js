@@ -10,5 +10,6 @@ module.exports = {
    each: require('lodash/each'),
    reduce: require('lodash/reduce'),
    defaults: require('lodash/defaults'),
+   isArray: require('lodash/isArray'),
    isFunction: require('lodash/isFunction'),
 };
