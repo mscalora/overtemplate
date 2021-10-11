@@ -1,5 +1,7 @@
 'use strict';
 
+/*global module*/
+
 // We simply require the specific functions we need from lodash to create a smaller bundle
 // in browserify-style environments.
 /* eslint-disable global-require */

@@ -1,25 +1,31 @@
 {
-  "name": "@silvermine/undertemplate",
-  "version": "1.0.2",
-  "description": "Replacement for _.template (underscore or lodash) without unsafe evals.",
-  "main": "src/index.js",
+  "name": "overtemplate",
+  "version": "1.0.0",
+  "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
+  "main": "src/overtemplate.js",
   "scripts": {
-    "commitlint": "commitlint --from a5cda1c",
-    "test": "check-node-version --package --print && nyc mocha -- -r ./tests/setup/before.js 'tests/**/*.test.js'",
-    "standards": "npm run commitlint && grunt standards"
+    "test": "check-node-version --package --print && nyc mocha -- -r ./tests/setup/before.js 'tests/**/*.test.js'"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "node": true
+    }
   },
   "engines": {
-    "node": ">= 4",
+    "node": ">= 8",
     "npm": ">= 5.7.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/silvermine/undertemplate.git"
+    "url": "git+ssh://git@github.com/mscalora/overtemplate.git"
   },
   "keywords": [
     "Underscore",
     "Lodash",
     "template",
+    "loop",
+    "conditional",
     "csp",
     "content security policy",
     "unsafe",
@@ -27,30 +33,18 @@
     "eval",
     "_.template"
   ],
-  "author": "Jeremy Thomerson",
+  "author": "Mike Scalora",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/silvermine/undertemplate/issues"
+    "url": "https://github.com/mscalora/overtemplate/issues"
   },
-  "homepage": "https://github.com/silvermine/undertemplate#readme",
+  "homepage": "https://github.com/mscalora/overtemplate#readme",
   "devDependencies": {
-    "@commitlint/cli": "12.1.1",
-    "@commitlint/travis-cli": "12.1.1",
-    "@silvermine/chai-strictly-equal": "1.0.0",
-    "@silvermine/eslint-config": "3.0.1",
-    "@silvermine/standardization": "1.0.3",
     "chai": "4.1.2",
     "check-node-version": "3.2.0",
-    "coveralls": "3.0.0",
     "eslint": "6.8.0",
-    "grunt": "1.4.0",
-    "grunt-cli": "1.2.0",
-    "grunt-eslint": "22.0.0",
     "mocha": "8.4.0",
-    "nyc": "15.1.0",
-    "rewire": "3.0.2",
-    "silvermine-serverless-utils": "git+https://github.com/silvermine/serverless-utils.git#910f1149af824fc8d0fa840878079c7d3df0f414",
-    "sinon": "4.5.0"
+    "nyc": "15.1.0"
   },
   "dependencies": {
     "lodash": "4.x"

@@ -1,5 +1,7 @@
 'use strict';
 
+/*global module*/
+
 const _ = require('./lodash'); // our local, smaller version
 
 const DEFAULT_SETTINGS = {

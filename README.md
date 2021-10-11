@@ -1,40 +1,32 @@
-# Silvermine UnderTemplate
-
-[![Build Status](https://travis-ci.org/silvermine/undertemplate.svg?branch=master)](https://travis-ci.org/silvermine/undertemplate)
-[![Coverage Status](https://coveralls.io/repos/github/silvermine/undertemplate/badge.svg?branch=master)](https://coveralls.io/github/silvermine/undertemplate?branch=master)
-[![Dependency Status](https://david-dm.org/silvermine/undertemplate.svg)](https://david-dm.org/silvermine/undertemplate)
-[![Dev Dependency Status](https://david-dm.org/silvermine/undertemplate/dev-status.svg)](https://david-dm.org/silvermine/undertemplate#info=devDependencies&view=table)
-
+# OverTemplate
 
 ## What is it?
 
-A simple replacement for `_.template` from either [Underscore][utmpl] or [Lodash][ltmpl]
-that removes the features that make those libraries incompatible with Content Security
-Policy (CSP). Specifically, this implementation supports only interpolation (escaped and
-unescaped) and does not support JS evaluation.
+A fairly simple templating system that combines the escaped and interpolated parts of Lodash/Underscore templates with simple conditional and looping over an array while conforming to Content Security
+Policy (CSP).
 
+Based on Silvermine UnderTemplate which is a _simple replacement for `_.template` from either [Underscore][utmpl] or [Lodash][ltmpl]
+that removes the features that make those libraries incompatible with Content Security
+Policy (CSP)._
 
 ## How do I use it?
 
-Just like you would have used `_.template`:
+Similar to templates in Underscore's `_.template`:
 
 ```
-var makeTemplate = require('@silvermine/undertemplate'),
-    template = makeTemplate('Hello <%= name %>');
+let overtemplate = require('overtemplate'),
+    compiled = overtemplate('Hello <%= name %>');
 
-console.log(template({ name: 'John Smith' }));
+console.log(compiled({ name: 'John Smith' }));
 ```
 
-Of course, we only support:
+Template Language:
 
    * `<%= … %>`: interpolate a value
    * `<%- … %>`: interpolate and HTML escape a value
-
-The following are **NOT** supported:
-
-   * `<% … %>`: JS evaluation
-   * `<% print('Hello ' + epithet); %>`: JS evaluation with the `print` function
-
+   * `<% for (_array_,_alias_) %> … <% end %>`: loop over an array value
+   * `<% if (_condition_) %> … <% end %>`: conditional on a truthy value
+   * `<% if (_condition_) %> … <% else %> … <% end %>`: conditional with alternate on a truthy value
 
 ## A Couple Notes
 
@@ -55,15 +47,13 @@ polyfills to support a wide array of browsers. To help reduce bloat, we do two t
 
 ## How do I contribute?
 
-We genuinely appreciate external contributions. See [our extensive
-documentation][contributing] on how to contribute.
-
+Pull requests with tests and documentation updates as needed
 
 ## License
 
 This software is released under the MIT license. See [the license file](LICENSE) for more
 details.
 
-[contributing]: https://github.com/silvermine/silvermine-info#contributing
+Copyrighted by Mike Scalora and original Silvermine UnderTemplate code was copyrited by Jeremy Thomerson 2018
 [utmpl]: http://underscorejs.org/#template
 [ltmpl]: https://lodash.com/docs/#template

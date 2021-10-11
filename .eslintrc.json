@@ -1,10 +1,6 @@
 {
 
-   "extends": "@silvermine/eslint-config/browser",
-
-   "rules": {
-      "max-depth": ["error", 6],
-      "complexity": "off"
-   }
-
+   "extends": "eslint:recommended",
+   "env": { "es6": true, "amd": true },
+   "parserOptions": { "ecmaVersion": 6 }
 }
