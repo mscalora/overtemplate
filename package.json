@@ -1,6 +1,6 @@
 {
-  "name": "overtemplate",
-  "version": "1.0.0",
+  "name": "@mscalora/overtemplate",
+  "version": "1.0.1",
   "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
   "main": "src/overtemplate.js",
   "scripts": {
