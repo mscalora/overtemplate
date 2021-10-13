@@ -5,12 +5,23 @@
 const _ = require('./lodash'); // our local, smaller version
 
 const DEFAULT_SETTINGS = {
+  namedGroups: false,
   escape: /<%-([\s\S]+?)%>/g,
   interpolate: /<%=([\s\S]+?)%>/g,
   terminate: /<%\s*?(end)\s*?%>/g,
-  loop: /<%\s*?for\s*?\(([^)]+?),([^)]+?)\)\s*?%>/g,
   conditional: /<%\s*?if\s*?\(([^)]+?)\)\s*?%>/g,
   alternative: /<%\s*?(else)\s*?%>/g,
+  loop: /<%\s*?for\s*?\(([^)]+?),([^)]+?)\)\s*?%>/g,
+};
+
+const DEFAULT_NAMED_CAPTURE_SETTINGS = {
+  namedGroups: true,
+  escape: /<%-(?<escape>[\s\S]+?)%>/g,
+  interpolate: /<%=(?<interpolate>[\s\S]+?)%>/g,
+  terminate: /<%\s*?(?<terminate>end)\s*?%>/g,
+  conditional: /<%\s*?if\s*?\((?<conditional>[^)]+?)\)\s*?%>/g,
+  alternative: /<%\s*?(?<alternative>else)\s*?%>/g,
+  loop: /<%\s*?for\s*?\((?<loopArray>[^)]+?),(?<loopAlias>[^)]+?)\)\s*?%>/g,
 };
 
 const ESCAPE_ENTITIES = {
@@ -42,41 +53,54 @@ function escapeHTML(str) {
 
 function compile(text, userSettings) {
   let parts = [],
-      index = 0,
-      settings = _.defaults({}, userSettings, DEFAULT_SETTINGS),
-      regExpPattern, matcher;
+      settings = _.defaults({}, userSettings),
+      regExpPattern,
+      matcher,
+      match,
+      position = 0;
+
+  const ESCAPE = 1,
+      INTERPOLATE = 2,
+      TERMINATE = 3,
+      CONDITIONAL = 4,
+      ALTERNATIVE = 5,
+      LOOP = 6;
+
+  _.defaults(settings, settings.namedGroups ? DEFAULT_NAMED_CAPTURE_SETTINGS : DEFAULT_SETTINGS);
 
   regExpPattern = [
     settings.escape.source,
     settings.interpolate.source,
     settings.terminate.source,
-    settings.loop.source,
     settings.conditional.source,
     settings.alternative.source,
+    settings.loop.source,
   ];
-  matcher = new RegExp(regExpPattern.join('|') + '|$', 'g');
+  matcher = new RegExp(regExpPattern.join('|') + '|(?<eos>$)', 'g');
 
-  // eslint-disable-next-line max-params
-  text.replace(matcher, function(match, escape, interpolate, terminate, loopArray, loopAlias, conditional, alternative, offset) {
-    parts.push(text.slice(index, offset));
-    index = offset + match.length;
+  while ((match = matcher.exec(text)) !== null) {
+    let groups = match.groups || {},
+        param;
 
-    if (escape) {
-      parts.push(function(data) {
-        return escapeHTML(getValue(escape, data));
-      });
-    } else if (interpolate) {
-      parts.push(getValue.bind(null, interpolate));
-    } else if (terminate) {
-      parts.push([ 'end' ]);
-    } else if (loopArray) {
-      parts.push([ 'loop', _.trim(loopArray), _.trim(loopAlias) ]);
-    } else if (conditional) {
-      parts.push([ 'if', _.trim(conditional) ]);
-    } else if (alternative) {
-      parts.push([ 'else' ]);
+    parts.push(text.slice(position, match.index));
+    position = matcher.lastIndex;
+
+    if ((param = !settings.namedGroups ? match[ESCAPE] : groups.escape)) {
+      parts.push((data) => escapeHTML(getValue(param, data)));
+    } else if ((param = !settings.namedGroups ? match[INTERPOLATE] : groups.interpolate)) {
+      parts.push((data) => getValue(param, data));
+    } else if (!settings.namedGroups ? match[TERMINATE] : groups.terminate) {
+      parts.push(['end']);
+    } else if (!settings.namedGroups ? match[ALTERNATIVE] : groups.alternative) {
+      parts.push(['else']);
+    } else if ((param = !settings.namedGroups ? match[CONDITIONAL] : groups.conditional)) {
+      parts.push(['if', param]);
+    } else if ((param = !settings.namedGroups ? match[LOOP] : groups.loopArray)) {
+      parts.push(['loop', param, _.trim(groups.loopAlias || match[LOOP+1] || '_item')]);
+    } else {
+      break;
     }
-  });
+  }
 
   return function(data) {
     let str = '',

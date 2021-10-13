@@ -1,12 +1,15 @@
 'use strict';
 
 const expect = require('chai').expect,
-      makeTemplate = require('../src');
+      makeTemplate = require('../src/overtemplate.js');
+
+const FRUITS = [ 'apples', 'oranges', 'bananas' ],
+      COLORS = ['red', 'green', 'blue', 'orange'];
 
 describe('UnderTemplate', function() {
 
    it('returns a function when making a template', function() {
-      expect(makeTemplate('Hello <%= name %>')).to.be.a('function');
+      expect(makeTemplate('Hello <%= name %> there <%= name %> end')).to.be.a('function');
    });
 
    function one(tmpl, exp, data, settings) {
@@ -108,7 +111,7 @@ describe('UnderTemplate', function() {
       it('works with simple loop', function() {
          one('I like<% for (fruits, fruit) %> <%-fruit%>,<% end %>',
             'I like apples, oranges, bananas,',
-            { fruits: [ 'apples', 'oranges', 'bananas' ] });
+            { fruits: FRUITS });
       });
 
       it('works with simple loop over empty array', function() {
@@ -170,6 +173,48 @@ describe('UnderTemplate', function() {
          one('## IF test THEN ##True## ELSE ##False## END ##', 'False', { test: false },
             { conditional: /##\s*IF\s([^#]+?)\sTHEN\s*##/g, alternative: /##\s*(ELSE)\s*##/g, terminate: /##\s*(END)\s*##/g }
          );
+      });
+
+      it('works with named group capture enabled', function() {
+
+         const template = '<%if(title)%><%-title%>/<%=title%><%else%>-none-<%end%>:<%for(colors,c)%> <%=c%><%end%>';
+
+         const data = {
+            title: 'Colors & colors',
+            colors: COLORS,
+         };
+
+         const expected = 'Colors &amp; colors/Colors & colors: red green blue orange';
+
+         one(template, expected, data, {namedGroups: true});
+      });
+
+
+
+      it('works with named group capture if & loop regexp', function() {
+
+         const settings = {
+            namedGroups: true,
+            escape: /«-(?<escape>[^»]+?)»/g,
+            interpolate: /«=(?<interpolate>[^»]+?)»/g,
+            conditional: /«\s*if\s*\((?<conditional>[^»]+?)\)\s*»/g,
+            loop: /«\s*for\s*\((?<loopAlias>[^»]+?)\sof\s(?<loopArray>[^»]+?)\)\s*»/g,
+            terminate: /«\s*(?<terminate>end)\s*»/g,
+            alternative: /«\s*(?<alternative>else)\s*»/g,
+         };
+
+         const template = 'There are « if (fruits.length) »«- fruits.length »« else »no« end » fruit\n' +
+            '« for (fruit of fruits) »' +
+               '  «- fruit_count ». «- fruit »\n' +
+            '« end »';
+
+         const data = {
+            fruits: FRUITS,
+         };
+
+         const expected = 'There are 3 fruit\n' + FRUITS.map((f, i) => `  ${i+1}. ${f}\n`).join('');
+
+         one(template, expected, data, settings);
       });
    });
 });
