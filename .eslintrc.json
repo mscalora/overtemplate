@@ -1,6 +1,6 @@
 {
 
    "extends": "eslint:recommended",
-   "env": { "es6": true, "amd": true, "browser": true },
-   "parserOptions": { "ecmaVersion": 6 }
+   "env": { "es6": true, "amd": true, "browser": true, "node": true },
+   "parserOptions": { "ecmaVersion": 2018 }
 }

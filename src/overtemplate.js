@@ -1,27 +1,42 @@
 'use strict';
 
-/*global module*/
+/* eslint-disable no-unused-vars */
 
 const _ = require('./lodash'); // our local, smaller version
 
-const DEFAULT_SETTINGS = {
+/** @type OverTemplateSettings */
+const DEFAULT_ORDERED_PARSING = {
   namedGroups: false,
   escape: /<%-([\s\S]+?)%>/g,
   interpolate: /<%=([\s\S]+?)%>/g,
   terminate: /<%\s*?(end)\s*?%>/g,
-  conditional: /<%\s*?if\s*?\(([^)]+?)\)\s*?%>/g,
+  conditional: /<%\s*?if\s*?\(((?:.(?!%>))+?)\)\s*?%>/g,
   alternative: /<%\s*?(else)\s*?%>/g,
-  loop: /<%\s*?for\s*?\(([^)]+?),([^)]+?)\)\s*?%>/g,
+  loop: /<%\s*?for\s*?\(((?:.(?!%>))+?);((?:.(?!%>))+?)\)\s*?%>/g,
 };
 
-const DEFAULT_NAMED_CAPTURE_SETTINGS = {
+/** @type OverTemplateSettings */
+const DEFAULT_NAMED_CAPTURE_PARSING = {
   namedGroups: true,
   escape: /<%-(?<escape>[\s\S]+?)%>/g,
   interpolate: /<%=(?<interpolate>[\s\S]+?)%>/g,
   terminate: /<%\s*?(?<terminate>end)\s*?%>/g,
-  conditional: /<%\s*?if\s*?\((?<conditional>[^)]+?)\)\s*?%>/g,
+  conditional: /<%\s*?if\s*?\((?<conditional>(?:.(?!%>))+?)\)\s*?%>/g,
   alternative: /<%\s*?(?<alternative>else)\s*?%>/g,
-  loop: /<%\s*?for\s*?\((?<loopArray>[^)]+?),(?<loopAlias>[^)]+?)\)\s*?%>/g,
+  loop: /<%\s*?for\s*?\((?<loopArray>(?:.(?!%>))+?);(?<loopAlias>(?:.(?!%>))+?)\)\s*?%>/g,
+};
+
+const BUILT_IN_LOGIC = {
+  defaultNumberFormatter: function (n, _, __) { return `${n}`; },
+  defaultDateFormatter: function (d, _, __) { return d.toLocaleString(); },
+  defaultFormatter: defaultFormatter,
+  defaultExpressionEvaluator: _.get,
+};
+
+const DEFAULT_LOGIC = {
+  numberFormatter: BUILT_IN_LOGIC.defaultNumberFormatter,
+  dateFormatter: BUILT_IN_LOGIC.defaultDateFormatter,
+  expressionEvaluator: BUILT_IN_LOGIC.defaultExpressionEvaluator,
 };
 
 const ESCAPE_ENTITIES = {
@@ -33,12 +48,51 @@ const ESCAPE_ENTITIES = {
   '`': '&#x60;',
 };
 
-function getValue(path, data) {
-  return _.get(data, _.trim(path), '');
+/**
+ * evaluate interpolatable expression/path
+ * @param {string} expression
+ * @param {Object} data
+ * @param {OverTemplateSettings} [settings]
+ * @returns {any}
+ * @private
+ */
+function getValue(expression, data, settings, ) {
+  return settings.expressionEvaluator(data, `${expression}`.trim(), '', settings);
 }
 
+/**
+ * evaluate interpolatable expression/path to formatted value
+ * @param {string} expression
+ * @param {Object} data
+ * @param {OverTemplateSettings} [settings]
+ * @returns {any}
+ * @private
+ */
+function getFormattedValue(expression, data, settings) {
+  let value = getValue(expression, data, settings);
+  if (settings.customFormatter) {
+    return settings.customFormatter(value, data, settings, expression);
+  }
+  return defaultFormatter(value, data, settings, expression);
+}
+
+function defaultFormatter (value, data, settings, expression) {
+  if (_.isNumber(value)) {
+    return settings.numberFormatter(value, data, settings, expression);
+  } else if (_.isDate(value)) {
+    return settings.dateFormatter(value, data, settings, expression);
+  }
+  return `${value}`;
+}
+
+/**
+ * convert special characters in a string to HTML entities
+ * @param {String} str
+ * @returns {String}
+ * @private
+ */
 function escapeHTML(str) {
-  let pattern = '(?:' + _.keys(ESCAPE_ENTITIES).join('|') + ')',
+  let pattern = '(?:' + Object.keys(ESCAPE_ENTITIES).join('|') + ')',
       testRegExp = new RegExp(pattern),
       replaceRegExp = new RegExp(pattern, 'g');
 
@@ -51,9 +105,73 @@ function escapeHTML(str) {
   return str;
 }
 
+/**
+ * @callback OverTemplateFunction
+ * @param {Object} data
+ * @returns {string}
+ * */
+
+/**
+ * @callback OverTemplateNumberFormatterType
+ * @param {String} expression
+ * @param {Object} data
+ * @param {OverTemplateSettings} [settings]
+ * @returns {string}
+ */
+
+/**
+ * @callback ExpressionEvaluatorType
+ * @param {Object} data
+ * @param {String} expression
+ * @param {any} defaultValue
+ * @param {OverTemplateSettings} [settings]
+ * @returns {any}
+ */
+
+/** @typedef {Object} OverTemplateSettings
+ *  @property {boolean} namedGroups
+ *  @property {RegExp} escape
+ *  @property {RegExp} interpolate
+ *  @property {RegExp} terminate
+ *  @property {RegExp} conditional
+ *  @property {RegExp} alternative
+ *  @property {RegExp} loop
+ *  @property {ExpressionEvaluatorType} [expressionEvaluator]
+ *  @property {OverTemplateNumberFormatter} [numberFormatter]
+ *  @property {OverTemplateDateFormatter} [dateFormatter]
+ *  @property {OverTemplateCustomFormatter|null} [customFormatter]
+ *  @property {string} [parameterSeparator] use alternate parameter separator (e.g. for tag)
+ */
+
+/** @typedef {OverTemplateNumberFormatterType} OverTemplateNumberFormatter */
+/** @typedef {OverTemplateNumberFormatterType} OverTemplateDateFormatter */
+/** @typedef {OverTemplateNumberFormatterType} OverTemplateCustomFormatter */
+
+function getParsingSettings (settings, useNamedParsing) {
+  let parsing = {},
+      defaultParsers = useNamedParsing ? DEFAULT_NAMED_CAPTURE_PARSING : DEFAULT_ORDERED_PARSING;
+  for (let item of Object.keys(defaultParsers)) {
+    if (settings[item]) {
+      parsing[item] = settings[item];
+    } else if (settings.parameterSeparator && defaultParsers[item].source) {
+      parsing[item] = new RegExp(defaultParsers[item].source.replace(/;/g,settings.parameterSeparator));
+    } else {
+      parsing[item] = defaultParsers[item];
+    }
+    settings[item] = parsing[item];
+  }
+  return parsing;
+}
+
+/**
+ * compile template string into template function
+ * @param {String} text
+ * @param {OverTemplateSettings} [userSettings]
+ * @returns {OverTemplateFunction}
+ */
 function compile(text, userSettings) {
   let parts = [],
-      settings = _.defaults({}, userSettings),
+      settings = Object.assign({}, BUILT_IN_LOGIC, DEFAULT_LOGIC, userSettings || {}),
       regExpPattern,
       matcher,
       match,
@@ -64,17 +182,16 @@ function compile(text, userSettings) {
       TERMINATE = 3,
       CONDITIONAL = 4,
       ALTERNATIVE = 5,
-      LOOP = 6;
-
-  _.defaults(settings, settings.namedGroups ? DEFAULT_NAMED_CAPTURE_SETTINGS : DEFAULT_SETTINGS);
+      LOOP = 6,
+      resolvedRegExp = getParsingSettings(settings, _.get(userSettings, 'namedGroups', false))
 
   regExpPattern = [
-    settings.escape.source,
-    settings.interpolate.source,
-    settings.terminate.source,
-    settings.conditional.source,
-    settings.alternative.source,
-    settings.loop.source,
+    resolvedRegExp.escape.source,
+    resolvedRegExp.interpolate.source,
+    resolvedRegExp.terminate.source,
+    resolvedRegExp.conditional.source,
+    resolvedRegExp.alternative.source,
+    resolvedRegExp.loop.source,
   ];
   matcher = new RegExp(regExpPattern.join('|') + '|(?<eos>$)', 'g');
 
@@ -86,9 +203,9 @@ function compile(text, userSettings) {
     position = matcher.lastIndex;
 
     if ((param = !settings.namedGroups ? match[ESCAPE] : groups.escape)) {
-      parts.push((data) => escapeHTML(getValue(param, data)));
+      parts.push((data) => escapeHTML(getFormattedValue(param, data, settings)));
     } else if ((param = !settings.namedGroups ? match[INTERPOLATE] : groups.interpolate)) {
-      parts.push((data) => getValue(param, data));
+      parts.push((data) => getFormattedValue(param, data, settings));
     } else if (!settings.namedGroups ? match[TERMINATE] : groups.terminate) {
       parts.push(['end']);
     } else if (!settings.namedGroups ? match[ALTERNATIVE] : groups.alternative) {
@@ -96,7 +213,7 @@ function compile(text, userSettings) {
     } else if ((param = !settings.namedGroups ? match[CONDITIONAL] : groups.conditional)) {
       parts.push(['if', param]);
     } else if ((param = !settings.namedGroups ? match[LOOP] : groups.loopArray)) {
-      parts.push(['loop', param, _.trim(groups.loopAlias || match[LOOP+1] || '_item')]);
+      parts.push(['loop', param, (groups.loopAlias || match[LOOP+1] || '_item').trim()]);
     } else {
       break;
     }
@@ -149,7 +266,7 @@ function compile(text, userSettings) {
             break;
           }
           case 'loop': {
-            let collection = getValue(part[1], data),
+            let collection = getValue(part[1], data, settings),
                 alias = part[2];
 
             stack.push({ structure: 'loop', collection: collection, alias: part[2], index: 0, position: pos, suppressed: suppress });
@@ -167,7 +284,7 @@ function compile(text, userSettings) {
             break;
           }
           case 'if': {
-            let condition = getValue(part[1], data);
+            let condition = getValue(part[1], data, settings);
 
             stack.push({ structure: 'if', condition: condition, suppressed: suppress });
             suppress = suppress || !condition; // suppress appropriately is not currently suppressed
