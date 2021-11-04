@@ -70,10 +70,10 @@ By default, expressions resulting in Date objects are converted to a string usin
 
 ### Formatter functions receive four parameters:
 
-# value - value resolved from expression and data; date formatters should always receive a Date object, number formatters should always receive a value where _.isNumber returns true 
-# data - current data object (e.g. with loop values in scope)
-# settings - current settings (see settings for callbacks section)
-# expression - raw expression string
+* value - value resolved from expression and data; date formatters should always receive a Date object, number formatters should always receive a value where _.isNumber returns true 
+* data - current data object (e.g. with loop values in scope)
+* settings - current settings (see settings for callbacks section)
+* expression - raw expression string
 
 Formatter functions are expected to return a string value
 
