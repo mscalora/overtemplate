@@ -31,13 +31,13 @@ Similar to templates in Underscore's `_.template`:
 
 ### Documentation
 
-* (Index)[https://mscalora.github.io/overtemplate/]
-<!--  * (Examples)[https://mscalora.github.io/overtemplate/examples.html] -->
-  * (Template Language Syntax)[https://mscalora.github.io/overtemplate/syntax.html]
-<!--  * (Settings)[https://mscalora.github.io/overtemplate/settings.html] -->
-  * (Expressions)[https://mscalora.github.io/overtemplate/expressions.html]
-  * (Formatters)[https://mscalora.github.io/overtemplate/formatters.html]
-  * (Filters)[https://mscalora.github.io/overtemplate/filters.html]
+* [Index](https://mscalora.github.io/overtemplate/)
+<!--  * [Examples](https://mscalora.github.io/overtemplate/examples.html) -->
+  * [Template Language Syntax](https://mscalora.github.io/overtemplate/syntax.html)
+<!--  * [Settings](https://mscalora.github.io/overtemplate/settings.html) -->
+  * [Expressions](https://mscalora.github.io/overtemplate/expressions.html)
+  * [Formatters](https://mscalora.github.io/overtemplate/formatters.html)
+  * [Filters](https://mscalora.github.io/overtemplate/filters.html)
 
 ### Default Syntax
 
