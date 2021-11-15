@@ -26,11 +26,52 @@ const DEFAULT_NAMED_CAPTURE_PARSING = {
   loop: /<%\s*?for\s*?\((?<loopArray>(?:.(?!%>))+?);(?<loopAlias>(?:.(?!%>))+?)\)\s*?%>/g,
 };
 
+/** @type OverTemplateSettings */
+const DEFAULT_ALT_ORDERED_PARSING = {
+  namedGroups: false,
+  escape: /«-([\s\S]+?)»/g,
+  interpolate: /«=([\s\S]+?)»/g,
+  terminate: /«\s*?(end)\s*?»/g,
+  conditional: /«\s*?if\s*?\(((?:.(?!»))+?)\)\s*?»/g,
+  alternative: /«\s*?(else)\s*?»/g,
+  loop: /«\s*?for\s*?\(((?:.(?!»))+?);((?:.(?!»))+?)\)\s*?»/g,
+};
+
+/** @type OverTemplateSettings */
+const DEFAULT_ALT_NAMED_CAPTURE_PARSING = {
+  namedGroups: true,
+  escape: /«-(?<escape>[\s\S]+?)»/g,
+  interpolate: /«=(?<interpolate>[\s\S]+?)»/g,
+  terminate: /«\s*?(?<terminate>end)\s*?»/g,
+  conditional: /«\s*?if\s*?\((?<conditional>(?:.(?!»))+?)\)\s*?»/g,
+  alternative: /«\s*?(?<alternative>else)\s*?»/g,
+  loop: /«\s*?for\s*?\((?<loopArray>(?:.(?!»))+?)•(?<loopAlias>(?:.(?!»))+?)\)\s*?»/g,
+};
+
+const DEFAULT_FILTER_SEPARATOR = '|',
+    DEFAULT_PARAMETER_SEPARATOR = ';',
+    PARAMETER_SEPARATOR_REGEXP = new RegExp(DEFAULT_PARAMETER_SEPARATOR, 'g'),
+    DEFAULT_ALT_FILTER_SEPARATOR = '~',
+    DEFAULT_ALT_PARAMETER_SEPARATOR = '•',
+    ALT_PARAMETER_SEPARATOR_REGEXP = new RegExp(DEFAULT_PARAMETER_SEPARATOR, 'g');
+
 const BUILT_IN_LOGIC = {
   defaultNumberFormatter: function (n, _, __) { return `${n}`; },
   defaultDateFormatter: function (d, _, __) { return d.toLocaleString(); },
   defaultFormatter: defaultFormatter,
-  defaultExpressionEvaluator: _.get,
+  defaultExpressionEvaluator: slightlySmarterGet,
+};
+
+const BUILT_IN_SYNTAX = {
+  parameterSeparator: DEFAULT_PARAMETER_SEPARATOR,
+  filterSeparator: DEFAULT_FILTER_SEPARATOR,
+  altSyntax: false,
+};
+
+const BUILT_IN_ALT_SYNTAX = {
+  parameterSeparator: DEFAULT_ALT_PARAMETER_SEPARATOR,
+  filterSeparator: DEFAULT_ALT_FILTER_SEPARATOR,
+  altSyntax: true,
 };
 
 const DEFAULT_LOGIC = {
@@ -48,6 +89,65 @@ const ESCAPE_ENTITIES = {
   '`': '&#x60;',
 };
 
+const LITERAL_KEYWORDS = {
+      'true': true,
+      'false': false,
+      'null': null,
+      'undefined': undefined,
+    };
+
+const BUILTIN_FILTERS = {
+  escape: escapeHTML,
+  trim: trim,
+  normalize: normalize,
+  pad: pad,
+  trunc: trunc,
+  fit: fit,
+  lowerCase: (s) => s.toLocaleLowerCase(),
+  upperCase: (s) => s.toLocaleUpperCase(),
+  capitalize: capitalize,
+  wrapWith: wrapWith,
+  htmlWrap: htmlWrap,
+  colorWrap: htmlColorWrap,
+  htmlLink: htmlLink,
+  round: (value, digits) => Number(Number(value).toFixed(digits || 0)),
+  fixed: (value, digits) => Number(value).toFixed(digits || 0),
+  hex: hex,
+  rot13 : rot13,
+  slice: (a,s,e) => Array.from(a).slice(s,e),
+  join: join,
+  substr: (s,p,l) => String(s).substr(p, l),
+  pick: pick,
+  toNumber: (value) => Number(value),
+  toFloat: (value) => parseFloat(value),
+  toInteger: (value, radix) => parseInt(value, radix),
+  toDate: (value) => new Date(value),
+  asDate: (value) => new Date(value).toDateString(),
+  asTime: (value) => new Date(value).toTimeString(),
+  msToDate: (value, radix) => new Date(parseInt(value, radix)),
+};
+
+/**
+ * check for string or numeric literals otherwise use _.get to evaluate expression/path
+ * @param {Object} data
+ * @param {string} expression
+ * @param {any} defaultValue
+ * @return {any}
+ */
+function slightlySmarterGet (data, expression, defaultValue) {
+  let match = /^\s*(`|'|")(.*?)\1\s*$|^\s*((?:[-.+][0-9]|[0-9]).*?)\s*$|^\s*(true|false|null|undefined)\s*$/.exec(expression);
+  if (match) {
+    if (match[2]) {
+      return match[2];
+    } else if (match[3]) {
+      return parseFloat(match[3]);
+    } else if (match[4]) {
+      return LITERAL_KEYWORDS[match[4]];
+    }
+  }
+  return _.get(data, expression, defaultValue);
+}
+
 /**
  * evaluate interpolatable expression/path
  * @param {string} expression
@@ -56,8 +156,17 @@ const ESCAPE_ENTITIES = {
  * @returns {any}
  * @private
  */
-function getValue(expression, data, settings, ) {
+function getValue(expression, data, settings) {
   return settings.expressionEvaluator(data, `${expression}`.trim(), '', settings);
+}
+
+function parseFilter(filterString, data, settings, expression) {
+  let match = /^\s*([^(]+)\s*\((.+)\)\s*$/.exec(filterString),
+      filter = [(match && match[1] || filterString).trim()];
+  if (!match) {
+    return filter;
+  }
+  return filter.concat(match[2].split(settings.parameterSeparator).map(v => v.trim()).filter(v => !!v));
 }
 
 /**
@@ -69,7 +178,19 @@ function getValue(expression, data, settings, ) {
  * @private
  */
 function getFormattedValue(expression, data, settings) {
-  let value = getValue(expression, data, settings);
+  let parts = settings.filterSeparator ? expression.split(settings.filterSeparator) : [expression],
+      expr = parts.shift().trim(),
+      value = getValue(expr, data, settings);
+  for (let filter of parts) {
+    let filterParts = parseFilter(filter, data, settings, expression),
+        filterName = filterParts.shift(),
+        filterFunc = settings.filters[filterName];
+    if (!filterFunc) {
+      throw new Error(`unknown filter function: ${filterName}`);
+    }
+    let params = filterParts.map((param) => settings.expressionEvaluator(data, param, null, settings));
+    value = filterFunc.apply({settings: settings, data: data, expression: expression}, [value].concat(params));
+  }
   if (settings.customFormatter) {
     return settings.customFormatter(value, data, settings, expression);
   }
@@ -82,7 +203,7 @@ function defaultFormatter (value, data, settings, expression) {
   } else if (_.isDate(value)) {
     return settings.dateFormatter(value, data, settings, expression);
   }
-  return `${value}`;
+  return `${value === undefined ? '' : value}`;
 }
 
 /**
@@ -115,7 +236,8 @@ function escapeHTML(str) {
  * @callback OverTemplateNumberFormatterType
  * @param {String} expression
  * @param {Object} data
- * @param {OverTemplateSettings} [settings]
+ * @param {OverTemplateSettings} settings
+ * @param {string} expression
  * @returns {string}
  */
 
@@ -128,8 +250,19 @@ function escapeHTML(str) {
  * @returns {any}
  */
 
+/**
+ * filter output
+ * @callback OverTemplateFilter
+ * @param {any} value
+ * @param {Object} data
+ * @param {OverTemplateSettings} settings
+ * @param {String} expression
+ * @return {any}
+ */
+
 /** @typedef {Object} OverTemplateSettings
  *  @property {boolean} namedGroups
+ *  @property {boolean} altSyntax
  *  @property {RegExp} escape
  *  @property {RegExp} interpolate
  *  @property {RegExp} terminate
@@ -140,7 +273,9 @@ function escapeHTML(str) {
  *  @property {OverTemplateNumberFormatter} [numberFormatter]
  *  @property {OverTemplateDateFormatter} [dateFormatter]
  *  @property {OverTemplateCustomFormatter|null} [customFormatter]
- *  @property {string} [parameterSeparator] use alternate parameter separator (e.g. for tag)
+ *  @property {string} [parameterSeparator] use alternate parameter separator (e.g. for tag) default: ;
+ *  @property {string} [filterSeparator] use alternate filter separator (e.g. for tag) default: #
+ *  @property {Object<string,OverTemplateFilter>} [filters]
  */
 
 /** @typedef {OverTemplateNumberFormatterType} OverTemplateNumberFormatter */
@@ -149,7 +284,9 @@ function escapeHTML(str) {
 
 function getParsingSettings (settings, useNamedParsing) {
   let parsing = {},
-      defaultParsers = useNamedParsing ? DEFAULT_NAMED_CAPTURE_PARSING : DEFAULT_ORDERED_PARSING;
+      defaultParsers = settings.altSyntax ?
+          useNamedParsing ? DEFAULT_ALT_NAMED_CAPTURE_PARSING : DEFAULT_ALT_ORDERED_PARSING :
+          useNamedParsing ? DEFAULT_NAMED_CAPTURE_PARSING : DEFAULT_ORDERED_PARSING;
   for (let item of Object.keys(defaultParsers)) {
     if (settings[item]) {
       parsing[item] = settings[item];
@@ -171,7 +308,8 @@ function getParsingSettings (settings, useNamedParsing) {
  */
 function compile(text, userSettings) {
   let parts = [],
-      settings = Object.assign({}, BUILT_IN_LOGIC, DEFAULT_LOGIC, userSettings || {}),
+      builtInSyntax = userSettings && userSettings.altSyntax ? BUILT_IN_ALT_SYNTAX : BUILT_IN_SYNTAX,
+      settings = Object.assign({}, builtInSyntax, BUILT_IN_LOGIC, DEFAULT_LOGIC, userSettings || {}),
       regExpPattern,
       matcher,
       match,
@@ -184,6 +322,8 @@ function compile(text, userSettings) {
       ALTERNATIVE = 5,
       LOOP = 6,
       resolvedRegExp = getParsingSettings(settings, _.get(userSettings, 'namedGroups', false))
+
+  settings.filters = Object.assign({}, BUILTIN_FILTERS, userSettings && userSettings.filters || {});
 
   regExpPattern = [
     resolvedRegExp.escape.source,
@@ -224,6 +364,8 @@ function compile(text, userSettings) {
         pos = 0,
         stack = [],
         suppress = false;
+
+    data = data || {};
 
     while (pos < parts.length) {
       let part = parts[pos];
@@ -314,5 +456,134 @@ function compile(text, userSettings) {
     return str;
   };
 }
+
+function trim (str, side) {
+  if (side === 'side') {
+    return String(str).replace(/^\s+/, '');
+  } else if (side === 'end') {
+    return String(str).replace(/\s+$/, '');
+  } else if (!side || side === 'both') {
+    return String(str).trim();
+  } else {
+    throw new Error('side parameter expected to be one of: start, end or both')
+  }
+}
+
+function normalize (str, sub) {
+  let s =String(str).trim().split(/\s+/).join(sub === undefined ? ' ' : sub);
+  return s;
+}
+
+function capitalize (str, trim, force) {
+  let s = String(str);
+  if (trim) {
+    s = s.trim();
+  }
+  if (force) {
+    s = s.toLocaleLowerCase();
+  }
+  if (s.length) {
+    return s[0].toLocaleUpperCase() + s.substr(1);
+  }
+  return s;
+}
+
+function wrapWith (str, start, end, between) {
+  return `${start || ''}${start && between || ''}${str}${end && between || ''}${end || ''}`
+}
+
+function htmlWrap (str, tag, classes, style, raw, id) {
+  return `<${tag || 'div'}` +
+      `${id ? ` id="${id}"` : ''}`+
+      `${classes ? ` class="${classes}"` : ''}`+
+      `${style ? ` style="${(''+style).replace(/%3B/ig,';')}"` : ''}`+
+      `>${raw ? str : escapeHTML(str)}</${tag || 'div'}>`;
+}
+
+function htmlColorWrap (str, color, tag, classes, style, raw, id) {
+  let c = `color:${color || 'red'};`,
+      css = style ? `${style} ${c}` : c;
+  return htmlWrap(str, tag || 'span', classes, css, raw, id);
+}
+
+function htmlLink (url, linkText, target, classes, raw, id) {
+  return `<a href="${url}"` +
+      `${target ? ` target="${target}"` : ''}`+
+      `${classes ? ` class="${classes}"` : ''}`+
+      `${id ? ` id="${id}"` : ''}`+
+      `>${escapeHTML(linkText || url)}</a>`;
+}
+
+function pad (str, len, char, side) {
+  let delta = len - str.length;
+  if (delta <= 0) {
+    return str;
+  } else if (side === 'start') {
+    return ((str.length < len) ? new Array(delta + 1).join(char || ' ') : '').substr(0, delta) + str;
+  } else if (side === 'both' || side === 'center') {
+    return new Array(Math.trunc(delta/2) + 1).join(char || ' ').substr(0, Math.trunc(delta/2)) +
+        str + new Array(Math.ceil(delta/2) + 1).join(char || ' ').substr(0, Math.ceil(delta/2));
+  } else if (side === 'end' || !side) {
+    return str + ((str.length < len) ? new Array(delta + 1).join(char || ' ') : '').substr(0, delta);
+  } else {
+    throw new Error('side parameter expected to be one of: start, end, center or both');
+  }
+}
+
+function trunc (str, len, side, ellipsis) {
+  let s = `${str}`;
+  if (s.length <= len) {
+    return s;
+  } else if (side === 'start') {
+    return s.substr(s.length - len);
+  } else if (side === 'both' || side === 'center') {
+    return s.substr(Math.trunc((str.length - len)/2), len)
+  } else if (side === 'end' || !side) {
+    return s.substr(0, len);
+  } else if (side === 'ellipsis') {
+    return s.substr(0, len-1) + (ellipsis || '…');
+  } else {
+    throw new Error('side parameter expected to be one of: start, end, center, both or ellipsis');
+  }
+}
+
+function fit (str, len, char, side, ellipsis) {
+  if (`${str}`.length > len) {
+    return trunc(str, len, side, ellipsis);
+  }
+  return pad(str, len, char, side==='ellipsis' ? 'end' : side);
+}
+
+function hex (value, prefix, upperCase) {
+  let val = _.isNumber(value) ? value : parseFloat(value);
+  if (upperCase) {
+    return `${prefix || ''}${val.toString(16).toLocaleUpperCase()}`;
+  }
+  return `${prefix || ''}${val.toString(16)}`;
+}
+
+function pick (value, index, defaultValue) {
+  let val = value[index];
+  return val === undefined ? defaultValue : val;
+}
+
+function join (value, separator, lastSeparator) {
+  let a = Array.from(value),
+      s = separator === undefined || separator === null ? ' ': separator,
+      l = lastSeparator === undefined || lastSeparator === null ? s : lastSeparator;
+  if (l !== s && a.length>1) {
+    return [a.slice(0,-1).join(s), a.slice(-1)].join(l);
+  }
+  return a.join(l);
+}
+
+function rot13 (value) {
+  return Array.from(`${value}`).map(c =>
+      String.fromCharCode(c.charCodeAt(0) + [-13,0,13][c.replace(/([a-m])|[n-z]/i, '$1$1').length])
+  ).join('');
+}
+
+compile.builtinFilters = Object.assign({}, BUILTIN_FILTERS);
+compile.builtinFilterNames = Object.keys(BUILTIN_FILTERS);
 
 module.exports = compile;

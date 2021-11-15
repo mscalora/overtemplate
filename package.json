@@ -1,6 +1,6 @@
 {
   "name": "@mscalora/overtemplate",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
   "main": "src/overtemplate.js",
   "scripts": {
@@ -41,9 +41,12 @@
   "homepage": "https://github.com/mscalora/overtemplate#readme",
   "devDependencies": {
     "chai": "4.1.2",
+    "chalk": "^4.1.2",
     "check-node-version": "3.2.0",
+    "commander": "7",
     "eslint": "6.8.0",
     "expr-eval": "^2.0.2",
+    "glob": "^7.2.0",
     "mocha": "8.4.0",
     "nyc": "15.1.0"
   },
