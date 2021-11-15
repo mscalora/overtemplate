@@ -220,12 +220,6 @@ Filters are a way to process interpolation tag expression values by specifying f
 
     <%- author.name | upperCase %>
 
-
-
-#### Built-in filters
-
-See: [detailed docs](docs/filters.md)
-
 ### Filters vs Formatters
 
 Formatters are oriented towards global processing by data type. Since they have visibility to the raw expression text, you can create formatters to handle serialization (converting to a string) by field name, see the **pwObfuscator** example above.
