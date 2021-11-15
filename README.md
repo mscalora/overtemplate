@@ -11,12 +11,14 @@ Policy (CSP)._
 
 ## History
 * 1.0 2021-10-11 initial release of OverTemplate
-** loop and conditional structures
+    * loop and conditional structures
 * 2.0 2021-11-03 major upgrade
-** custom expression evaluation
-** custom formatters
+    * custom expression evaluation
+    * custom formatters
 * 2.1 2021-11-05 minor upgrade
-** filters
+    * filters
+    * documentation
+    * reorganized tests
 
 > **_NOTE:_** Version 2.0.0 introduced a breaking change in the syntax of the loop construct, the parameter separator in the **_for_** tag will be a semicolon by default instead of a comma. A new option parameterSeparator has been added to allow for separators like comma or other characters that may function better with custom expression evaluators. Passing a comma character for the parameterSeparator setting will effectively revert the syntax to be 1.x compatible.
 
@@ -32,12 +34,13 @@ Similar to templates in Underscore's `_.template`:
 ### Documentation
 
 * [Index](https://mscalora.github.io/overtemplate/)
-<!--  * [Examples](https://mscalora.github.io/overtemplate/examples.html) -->
-  * [Template Language Syntax](https://mscalora.github.io/overtemplate/syntax.html)
-<!--  * [Settings](https://mscalora.github.io/overtemplate/settings.html) -->
-  * [Expressions](https://mscalora.github.io/overtemplate/expressions.html)
-  * [Formatters](https://mscalora.github.io/overtemplate/formatters.html)
-  * [Filters](https://mscalora.github.io/overtemplate/filters.html)
+    * [Template Language Syntax](https://mscalora.github.io/overtemplate/syntax.html)
+    * [Expressions](https://mscalora.github.io/overtemplate/expressions.html)
+    * [Formatters](https://mscalora.github.io/overtemplate/formatters.html)
+    * [Filters](https://mscalora.github.io/overtemplate/filters.html)
+
+<!--     * [Examples](https://mscalora.github.io/overtemplate/examples.html) -->
+<!--     * [Settings](https://mscalora.github.io/overtemplate/settings.html) -->
 
 ### Default Syntax
 
