@@ -135,7 +135,7 @@ const BUILTIN_FILTERS = {
  * @return {any}
  */
 function slightlySmarterGet (data, expression, defaultValue) {
-  let match = /^\s*(`|'|")(.*?)\1\s*$|^\s*((?:[-.+][0-9]|[0-9]).*?)\s*$|^\s*(true|false|null|undefined)\s*$/.exec(expression);
+  let match = /^\s*([`'"])(.*?)\1\s*$|^\s*((?:[-.+][0-9]|[0-9]).*?)\s*$|^\s*(true|false|null|undefined)\s*$/.exec(expression);
   if (match) {
     if (match[2]) {
       return match[2];
@@ -470,8 +470,7 @@ function trim (str, side) {
 }
 
 function normalize (str, sub) {
-  let s =String(str).trim().split(/\s+/).join(sub === undefined ? ' ' : sub);
-  return s;
+  return String(str).trim().split(/\s+/).join(sub === undefined ? ' ' : sub);
 }
 
 function capitalize (str, trim, force) {
@@ -586,4 +585,10 @@ function rot13 (value) {
 compile.builtinFilters = Object.assign({}, BUILTIN_FILTERS);
 compile.builtinFilterNames = Object.keys(BUILTIN_FILTERS);
 
-module.exports = compile;
+if (typeof window === 'object') {
+  window.overtemplate = compile;
+  window.__overtemplate = compile;
+}
+if (typeof module !== 'undefined') {
+  module.exports = compile;
+}

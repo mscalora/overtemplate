@@ -1,10 +1,12 @@
 {
   "name": "@mscalora/overtemplate",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
   "main": "src/overtemplate.js",
+  "xbrowser": "dist/overtemplate.js",
   "scripts": {
-    "test": "check-node-version --package --print && nyc mocha -- -r ./tests/setup/before.js 'tests/**/*.test.js'"
+    "test": "check-node-version --package --print && nyc mocha -- -r ./tests/setup/before.js 'tests/**/*.test.js'",
+    "build": "browserify -d -p tinyify src/overtemplate.js | exorcist dist/overtemplate.map.js >dist/overtemplate.js"
   },
   "eslintConfig": {
     "env": {
@@ -13,7 +15,7 @@
     }
   },
   "engines": {
-    "node": ">= 8",
+    "node": ">= 10",
     "npm": ">= 5.7.1"
   },
   "repository": {
@@ -40,15 +42,18 @@
   },
   "homepage": "https://github.com/mscalora/overtemplate#readme",
   "devDependencies": {
+    "browserify": "^17.0.0",
     "chai": "4.1.2",
     "chalk": "^4.1.2",
     "check-node-version": "3.2.0",
     "commander": "7",
     "eslint": "6.8.0",
+    "exorcist": "^2.0.0",
     "expr-eval": "^2.0.2",
     "glob": "^7.2.0",
     "mocha": "8.4.0",
-    "nyc": "15.1.0"
+    "nyc": "15.1.0",
+    "tinyify": "^3.0.0"
   },
   "dependencies": {
     "lodash": "4.x"
