@@ -7,6 +7,7 @@
     html {
       height: 100%;
       font-family: ui-sans-serif, sans-serif;
+      background: #f8f8ff;
     }
     body {
       min-height: calc(100% - 40px);
@@ -23,7 +24,7 @@
       place-items: center;
       padding: 12px;
     }
-    .src, .data, .output, .raw, .error {
+    .src, .data, .output, .raw, .diag-text {
       border: 1px solid black;
       width: auto;
       max-width: calc(100vw - 40px);
@@ -33,10 +34,26 @@
       font-family: ui-monospace Roboto, Menlo, Courier, monospace;
       overflow: auto;
       padding: 4px;
+      background: white;
     }
-    .error {
+    .src:hover, .data:hover {
+      border-color: #285FCC;
+      border-width: 2px;
+    }
+    .src:focus, .data:focus {
+      border-color: #285FCC;
+      border-width: 2px;
+      outline: none;
+    }
+    .src, .data {
+      border-color: darkgray;
+      border-width: 2px;
+    }
+    .output, .raw, .diag-text {
+      border-color: darkgray;
+    }
+    .diag-text {
       color: red;
-      border: none;
     }
     #message {
       color: blue;
@@ -53,7 +70,7 @@
       margin: 16px 0 0;
     }
     [contenteditable]:focus {
-      color: darkblue;
+      color: #173673;
     }
     .examples-container {
       display: grid;
@@ -87,19 +104,22 @@
     .examples {
       transition: all 0.3s;
     }
+    body:not(.diag-visible) .diag {
+      display: none;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/relaxed-json@^1.0/relaxed-json.js"></script>
 </head>
 <body>
   <div class="content">
     <div class="actions">
-      <button id="render" type="button" onclick="runTests();" disabled>Compile &amp; Render</button>
+      <button id="render" type="button" onclick="compileAndRender();" disabled>Compile &amp; Render</button>
     </div>
     <div id="message"></div>
     <h4>Template</h4>
-    <div class="src" contenteditable="true"><%= str | upperCase | colorWrap('blue';'center') %></div>
+    <div class="src" contenteditable autofocus><%= str | upperCase | colorWrap('blue';'center') %></div>
     <h4>Data</h4>
-    <div class="data" contenteditable="true">{
+    <div class="data" contenteditable>{
   "str": "Four score and seven years ago...",
   "int": 1234567890,
   "float": 12345.67890,
@@ -118,7 +138,8 @@
     <h4>Output as HTML</h4>
     <div class="output">
     </div>
-    <div class="error">
+    <h4 class="diag">Diagnostics</h4>
+    <div class="diag diag-text">
     </div>
     <h4>Filter Documentation Examples</h4>
     <div class="examples-container">
@@ -129,7 +150,7 @@
   <script>
     class Cursor {
       static getCurrentCursorPosition(parentElement) {
-        var selection = window.getSelection(),
+        let selection = window.getSelection(),
             charCount = -1,
             node;
 
@@ -161,7 +182,7 @@
 
       static setCurrentCursorPosition(chars, element) {
         if (chars >= 0) {
-          var selection = window.getSelection();
+          const selection = window.getSelection();
 
           let range = Cursor._createRange(element, { count: chars });
 
@@ -196,7 +217,7 @@
               chars.count = 0;
             }
           } else {
-            for (var lp = 0; lp < node.childNodes.length; lp++) {
+            for (let lp = 0; lp < node.childNodes.length; lp++) {
               range = Cursor._createRange(node.childNodes[lp], chars, range);
 
               if (chars.count === 0) {
@@ -223,26 +244,43 @@
   </script>
   <script>
     let messageEl = document.querySelector('#message');
-    function message (s, classes) {
-      if (s) {
-        messageEl.innerText = s;
+
+    function exception (e) {
+      message(e.toString(), 'bad');
+      if (e.stack) {
+        diag(e.stack);
+      }
+    }
+
+    function message (message, classes) {
+      if (message) {
+        messageEl.innerText = message;
       } else {
         messageEl.innerHTML = '&nbsp;';
+        diag('');
       }
       messageEl.classList.remove(...messageEl.classList);
       if (classes) {
         messageEl.classList.add(classes);
       }
     }
+
+    function diag (text) {
+      let errEl = document.querySelector('.diag-text');
+      errEl.innerText = text;
+      document.body.classList.toggle('diag-visible', !!(text || '').trim())
+    }
+
     message('initializing');
 
-    function runTests () {
+    function compileAndRender () {
       let srcEl = document.querySelector('.src'),
           outEl = document.querySelector('.output'),
           dataEl = document.querySelector('.data'),
           rawEl = document.querySelector('.raw'),
           data = {},
           dataSrc = (dataEl.innerText || '').trim() || '{}';
+      message('');
       try {
         data = JSON.parse(dataSrc);
       } catch (e) {
@@ -261,8 +299,7 @@
       } catch (ee) {
         rawEl.innerHTML = '';
         outEl.innerHTML = '';
-        let errEl = document.querySelector('.error');
-        errEl.innerText = ee.toString();
+        exception(ee);
       }
     }
 
@@ -312,24 +349,6 @@
       }
     }
 
-    function loadFilterExamples (version) {
-      let url = new URL("./filter-examples.json", location.href);
-      fetch(url).then(response => response.json()).then(data => {
-        console.log(JSON.stringify(data, null, 2));
-        window.filterExamples = data;
-        let exEl = document.querySelector('.examples'),
-            tmplSrc = '<div class="ex-row" data-num="«- index »" onclick="clickExample(this);">' +
-                '<span class="ex-name">«- name »</span>' +
-                '<span class="ex-content"><%= «- template » %></span></div>',
-            tmpl = overtemplate(tmplSrc, {altSyntax: true});
-        for (let index = 0; index < data.length; index++) {
-          let example = filterExamples[index];
-          example.index = index;
-          exEl.insertAdjacentHTML('beforeend', tmpl(example));
-        }
-      });
-    }
-
     function clickExample (el) {
       console.log(`Example ${el.dataset.num}`);
       let example = filterExamples[el.dataset.num],
@@ -342,6 +361,7 @@
       outEl.innerText = '';
       rawEl.innerText = '';
       srcEl.scrollIntoView({block: "center"});
+      diag('');
     }
 
     loadModule();
