@@ -306,7 +306,7 @@ function getParsingSettings (settings, useNamedParsing) {
  * @param {OverTemplateSettings} [userSettings]
  * @returns {OverTemplateFunction}
  */
-function compile(text, userSettings) {
+function overtemplate (text, userSettings) {
   let parts = [],
       builtInSyntax = userSettings && userSettings.altSyntax ? BUILT_IN_ALT_SYNTAX : BUILT_IN_SYNTAX,
       settings = Object.assign({}, builtInSyntax, BUILT_IN_LOGIC, DEFAULT_LOGIC, userSettings || {}),
@@ -582,13 +582,13 @@ function rot13 (value) {
   ).join('');
 }
 
-compile.builtinFilters = Object.assign({}, BUILTIN_FILTERS);
-compile.builtinFilterNames = Object.keys(BUILTIN_FILTERS);
+overtemplate .builtinFilters = Object.assign({}, BUILTIN_FILTERS);
+overtemplate .builtinFilterNames = Object.keys(BUILTIN_FILTERS);
 
 if (typeof window === 'object') {
-  window.overtemplate = compile;
-  window.__overtemplate = compile;
+  window.overtemplate = overtemplate ;
+  window.__overtemplate = overtemplate ;
 }
 if (typeof module !== 'undefined') {
-  module.exports = compile;
+  module.exports = overtemplate ;
 }

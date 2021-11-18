@@ -42,6 +42,10 @@ Similar to templates in Underscore's `_.template`:
 <!--     * [Examples](https://mscalora.github.io/overtemplate/examples.html) -->
 <!--     * [Settings](https://mscalora.github.io/overtemplate/settings.html) -->
 
+### Demo Page
+
+* [Demo Page](https://mscalora.github.io/overtemplate/demo.html)
+
 ### Default Syntax
 
 >Note: syntax of tags is customizable, default syntax shown below

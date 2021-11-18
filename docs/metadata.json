@@ -1,0 +1,364 @@
+{
+  "examples": [
+    {
+      "name": "escape",
+      "template": "\"Mom & Pop\" | escape",
+      "output": "Output: ```Mom &amp; Pop```"
+    },
+    {
+      "name": "trim",
+      "template": "\"  has space around it   \" | trim",
+      "output": "Output: ```has space around it```"
+    },
+    {
+      "name": "normalize",
+      "template": "\"   has    space         around it   \" | normalize",
+      "output": "Output: ```has space around it```"
+    },
+    {
+      "name": "normalize",
+      "template": "\"   has    space         around it   \" | normalize(\"⎡GLUE⎤\")",
+      "output": "Output: ```has⎡GLUE⎤space⎡GLUE⎤around⎡GLUE⎤it```"
+    },
+    {
+      "name": "pad",
+      "template": "\"blue\" | pad(10)",
+      "output": "Output: <code>blue&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code>"
+    },
+    {
+      "name": "pad",
+      "template": "\"apple\" | pad(15;\" -\";\"both\")",
+      "output": "Output: <code> - - apple - - </code>"
+    },
+    {
+      "name": "trunc",
+      "template": "\"abcdefghijklmnopqrstuvwxyz\" | trunc(16)",
+      "output": "Output: <code>abcdefghijklmnop</code>"
+    },
+    {
+      "name": "trunc",
+      "template": "\"whitespace is preserved\" | trunc(13;\"center\")",
+      "output": "Output: <code>space is pres</code>"
+    },
+    {
+      "name": "trunc",
+      "template": "\"whitespace is preserved\" | trunc(13;\"ellipsis\")",
+      "output": "Output: <code>whitespace i…</code>"
+    },
+    {
+      "name": "trunc",
+      "template": "\"whitespace is preserved\" | trunc(13;\"ellipsis\";\"@\")",
+      "output": "Output: <code>whitespace i@</code>"
+    },
+    {
+      "name": "fit",
+      "template": "\"whitespace is preserved\" | fit(13;null;\"center\")",
+      "output": "Output: <code>space is pres</code>"
+    },
+    {
+      "name": "fit",
+      "template": "\"whitespace is preserved\" | fit(32;\"#\";\"center\")",
+      "output": "Output: <code>####whitespace is preserved#####</code>"
+    },
+    {
+      "name": "fit",
+      "template": "\"whitespace is preserved\" | fit(13;null;\"ellipsis\";\"Ⓧ\")",
+      "output": "Output: <code>whitespace iⓍ</code>"
+    },
+    {
+      "name": "lowerCase",
+      "template": "\"Are you for SCUBA?\" | lowerCase",
+      "output": "Output: ```are you for scuba?```"
+    },
+    {
+      "name": "upperCase",
+      "template": "\"we're not going to take it!\" | upperCase",
+      "output": "Output: ```WE'RE NOT GOING TO TAKE IT!```"
+    },
+    {
+      "name": "capitalize",
+      "template": "\"billieBob is COOL\" | capitalize",
+      "output": "Output: <code>BillieBob is COOL</code>"
+    },
+    {
+      "name": "capitalize",
+      "template": "\"  billieBob is COOL  \" | capitalize(true;true)",
+      "output": "Output: <code>Billiebob is cool</code>"
+    },
+    {
+      "name": "wrapWith",
+      "template": "\"blue\" | wrapWith(\"light\")",
+      "output": "Output: <code>lightblue</code>"
+    },
+    {
+      "name": "wrapWith",
+      "template": "\"blue\" | wrapWith(null; \"green\")",
+      "output": "Output: <code>bluegreen</code>"
+    },
+    {
+      "name": "wrapWith",
+      "template": "\"Amsterdam\" | wrapWith(\"New\"; null; \" \")",
+      "output": "Output: <code>New Amsterdam</code>"
+    },
+    {
+      "name": "wrapWith",
+      "template": "\"person\" | wrapWith(\"parent\"; \"child\"; \".\")",
+      "output": "Output: <code>parent.person.child</code>"
+    },
+    {
+      "name": "htmlWrap",
+      "template": "\"Mom & Pop\" | htmlWrap",
+      "output": "Output: ```<div>Mom &amp; Pop</div>```"
+    },
+    {
+      "name": "htmlWrap",
+      "template": "\"Mom & Pop\" | htmlWrap(\"p\";\"active special\";\"color: blue\";false;\"primary\")",
+      "output": "Output: ```<p id=\"primary\" class=\"active special\" style=\"color: blue\">Mom &amp; Pop</p>```"
+    },
+    {
+      "name": "htmlWrap",
+      "template": "\"contents\" | htmlWrap(\"p\") | htmlWrap(\"section\"; false; false; true)",
+      "output": "Output: ```<section><p>contents</p></section>```"
+    },
+    {
+      "name": "htmlWrap",
+      "template": "\"bold and green\" | htmlWrap(\"span\";null;\"font-weight: bold%3b color: green%3B\")",
+      "output": "Output: ```<span style=\"font-weight: bold; color: green;\">bold and green</span>```"
+    },
+    {
+      "name": "colorWrap",
+      "template": "errors[0].message | colorWrap('red';'p')",
+      "data": {
+        "errors": [
+          {
+            "code": 17,
+            "message": "Error: unexpected failure"
+          },
+          {
+            "code": 4,
+            "message": "Error: none"
+          }
+        ]
+      },
+      "output": "Output: ```<p style=\"color:red;\">Error: unexpected failure</p>```"
+    },
+    {
+      "name": "htmlLink",
+      "template": "search_engines[0].url | htmlLink(search_engines[0].name)",
+      "data": {
+        "search_engines": [
+          {
+            "url": "https://google.com",
+            "name": "Google"
+          },
+          {
+            "url": "https://bing.com",
+            "name": "Bing"
+          }
+        ]
+      },
+      "output": "Output: ```<a href=\"https://google.com\">Google</a>```"
+    },
+    {
+      "name": "round",
+      "template": "123.7002107 | round(3)",
+      "output": "Output: ```123.7```"
+    },
+    {
+      "name": "fixed",
+      "template": "123.7002107 | fixed(3)",
+      "output": "Output: ```123.700```"
+    },
+    {
+      "name": "pick",
+      "template": "\"ABCDEFGHIJKLM\" | pick(10)",
+      "output": "Output: ```K```"
+    },
+    {
+      "name": "pick",
+      "template": "\"ABCDEFGHIJKLM\" | pick(30; \"n/a\")",
+      "output": "Output: ```n/a```"
+    },
+    {
+      "name": "pick",
+      "template": "list | pick(n)",
+      "output": "Output: ```104```"
+    },
+    {
+      "name": "pick",
+      "template": "obj | pick(\"m\";\"Bird\")",
+      "output": "Output: ```Monkey```"
+    },
+    {
+      "name": "toNumber",
+      "template": "\"123.5670000\" | toNumber",
+      "output": "Output: ```123.567```"
+    },
+    {
+      "name": "toFloat",
+      "template": "\"123.5670000\" | toFloat",
+      "output": "Output: ```123.567```"
+    },
+    {
+      "name": "toFloat",
+      "template": "\"  71.39 ft \" | toFloat",
+      "output": "Output: ```71.39```"
+    },
+    {
+      "name": "toInteger",
+      "template": "\"123.5670000\" | toInteger",
+      "output": "Output: ```123```"
+    },
+    {
+      "name": "toInteger",
+      "template": "\"177.3 hours\" | toInteger",
+      "output": "Output: ```177```"
+    },
+    {
+      "name": "toInteger",
+      "template": "\"  71.39 mm \" | toInteger",
+      "output": "Output: ```71```"
+    },
+    {
+      "name": "toDate",
+      "template": "1234567890000 | toDate",
+      "output": "Output: ```2/13/2009, 4:31:30 PM```"
+    },
+    {
+      "name": "toDate",
+      "template": "'1980/2/25' | toDate",
+      "output": "Output: ```2/25/1980, 12:00:00 AM```"
+    },
+    {
+      "name": "msToDate",
+      "template": "\"1234567890000\" | msToDate",
+      "output": "Output: ```2/13/2009, 4:31:30 PM```"
+    },
+    {
+      "name": "msToDate",
+      "template": "\"11f71fb0450\" | msToDate(16)",
+      "output": "Output: ```2/13/2009, 4:31:30 PM```"
+    },
+    {
+      "name": "asDate",
+      "template": "'1980/2/25' | toDate | asDate",
+      "output": "Output: ```Mon Feb 25 1980```"
+    },
+    {
+      "name": "asTime",
+      "template": "'1980/2/25 1:12:11 pm' | toDate | asTime",
+      "output": "Output: ```13:12:11 GMT-0700 (Mountain Standard Time)```"
+    },
+    {
+      "name": "hex",
+      "template": "3833585 | hex",
+      "output": "Output: ```3a7ef1```"
+    },
+    {
+      "name": "hex",
+      "template": "3833585 | hex(\"0x\"; true)",
+      "output": "Output: ```0x3A7EF1```"
+    },
+    {
+      "name": "rot13",
+      "template": "\"Abracadabra\" | rot13",
+      "output": "Output: ```Noenpnqnoen```"
+    },
+    {
+      "name": "rot13",
+      "template": "\"Uryc! V'z orvat uryq cevfbare va n sbeghar pbbxvr snpgbel!\" | rot13",
+      "output": "Output: ```Help! I'm being held prisoner in a fortune cookie factory!```"
+    },
+    {
+      "name": "slice",
+      "template": "items | slice(5;9)",
+      "data": {
+        "items": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "f",
+          "g",
+          "h",
+          "i",
+          "j"
+        ]
+      },
+      "output": "Output: ```g,h,i,j```"
+    },
+    {
+      "name": "slice",
+      "template": "items | slice(-5)",
+      "data": {
+        "items": [
+          "a",
+          "b",
+          "c",
+          "d",
+          "f",
+          "g",
+          "h",
+          "i",
+          "j"
+        ]
+      },
+      "output": "Output: ```f,g,h,i,j```"
+    },
+    {
+      "name": "join",
+      "template": "items | join('-')",
+      "data": {
+        "items": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ]
+      },
+      "output": "Output: ```a-b-c-d```"
+    },
+    {
+      "name": "join",
+      "template": "items | join('•')",
+      "data": {
+        "items": [
+          "red",
+          "white",
+          "blue"
+        ]
+      },
+      "output": "Output: ```red•white•blue```"
+    },
+    {
+      "name": "join",
+      "template": "items | join(', '; ' and ')",
+      "data": {
+        "items": [
+          "red",
+          "white",
+          "blue"
+        ]
+      },
+      "output": "Output: ```red, white and blue```"
+    },
+    {
+      "name": "substr",
+      "template": "\"not kidding\" | substr(4;3)",
+      "output": "Output: ```kid```"
+    },
+    {
+      "name": "substr",
+      "template": "\"not kidding\" | substr(4)",
+      "output": "Output: ```kidding```"
+    }
+  ],
+  "name": "@mscalora/overtemplate",
+  "version": "2.1.2",
+  "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/mscalora/overtemplate.git"
+  },
+  "author": "Mike Scalora"
+}

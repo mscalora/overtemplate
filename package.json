@@ -1,12 +1,13 @@
 {
   "name": "@mscalora/overtemplate",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
   "main": "src/overtemplate.js",
-  "xbrowser": "dist/overtemplate.js",
+  "browser": "dist/overtemplate.js",
   "scripts": {
     "test": "check-node-version --package --print && nyc mocha -- -r ./tests/setup/before.js 'tests/**/*.test.js'",
-    "build": "browserify -d -p tinyify src/overtemplate.js | exorcist dist/overtemplate.map.js >dist/overtemplate.js"
+    "build": "browserify -d -p tinyify src/overtemplate.js | exorcist dist/overtemplate.map.js >dist/overtemplate.js",
+    "prepublishOnly": "tools/validate-examples-in-docs.js"
   },
   "eslintConfig": {
     "env": {

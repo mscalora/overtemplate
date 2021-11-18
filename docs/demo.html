@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Tests</title>
+  <style>
+    html {
+      height: 100%;
+      font-family: ui-sans-serif, sans-serif;
+    }
+    body {
+      min-height: calc(100% - 40px);
+      display: grid;
+      justify-content: center;
+      align-items: start;
+      max-width: 100vw;
+    }
+    .content {
+
+    }
+    .actions {
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+    .src, .data, .output, .raw, .error {
+      border: 1px solid black;
+      width: auto;
+      max-width: calc(100vw - 40px);
+      min-height: 48px;
+      margin: 6px 0;
+      white-space: pre;
+      font-family: ui-monospace Roboto, Menlo, Courier, monospace;
+      overflow: auto;
+      padding: 4px;
+    }
+    .error {
+      color: red;
+      border: none;
+    }
+    #message {
+      color: blue;
+      display: grid;
+      place-items: center;
+    }
+    #message.bad {
+      color: red;
+    }
+    #message.good {
+      color: green;
+    }
+    h4 {
+      margin: 16px 0 0;
+    }
+    [contenteditable]:focus {
+      color: darkblue;
+    }
+    .examples-container {
+      display: grid;
+      justify-content: center;
+      align-items: start;
+    }
+    .examples {
+      margin: 6px 0;
+      display: grid;
+      grid-template-columns: max-content max-content;
+    }
+    .examples > div {
+      display: contents;
+      color: #666;
+    }
+    .ex-name {
+      padding: 2px 6px;
+    }
+    .ex-content {
+      padding: 2px 2px;
+      white-space: pre;
+      font-family: ui-monospace Roboto, Menlo, Courier, monospace;
+    }
+    .ex-row {
+      cursor: pointer;
+    }
+    .ex-row:hover span {
+      background: #eee;
+      color: #000;
+    }
+    .examples {
+      transition: all 0.3s;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/relaxed-json@^1.0/relaxed-json.js"></script>
+</head>
+<body>
+  <div class="content">
+    <div class="actions">
+      <button id="render" type="button" onclick="runTests();" disabled>Compile &amp; Render</button>
+    </div>
+    <div id="message"></div>
+    <h4>Template</h4>
+    <div class="src" contenteditable="true"><%= str | upperCase | colorWrap('blue';'center') %></div>
+    <h4>Data</h4>
+    <div class="data" contenteditable="true">{
+  "str": "Four score and seven years ago...",
+  "int": 1234567890,
+  "float": 12345.67890,
+  "colors": ["red", "green", "blue"],
+  "scores": [10.31, 9.12, 13.71],
+  "people": [
+      {"name": "Fred Flintstone", "email": "fred@slate.com", "age": 41},
+      {"name": "Barney Rubble", "email": "barney@slate.com", "age": 39},
+      {"name": "Tex Hardrock", "email": "tex@bedrock.net", "age": 67}
+    ]
+}
+    </div>
+    <h4>Output as Text</h4>
+    <div class="raw">
+    </div>
+    <h4>Output as HTML</h4>
+    <div class="output">
+    </div>
+    <div class="error">
+    </div>
+    <h4>Filter Documentation Examples</h4>
+    <div class="examples-container">
+      <div class="examples">
+      </div>
+    </div>
+  </div>
+  <script>
+    class Cursor {
+      static getCurrentCursorPosition(parentElement) {
+        var selection = window.getSelection(),
+            charCount = -1,
+            node;
+
+        if (selection.focusNode) {
+          if (Cursor._isChildOf(selection.focusNode, parentElement)) {
+            node = selection.focusNode;
+            charCount = selection.focusOffset;
+
+            while (node) {
+              if (node === parentElement) {
+                break;
+              }
+
+              if (node.previousSibling) {
+                node = node.previousSibling;
+                charCount += node.textContent.length;
+              } else {
+                node = node.parentNode;
+                if (node === null) {
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        return charCount;
+      }
+
+      static setCurrentCursorPosition(chars, element) {
+        if (chars >= 0) {
+          var selection = window.getSelection();
+
+          let range = Cursor._createRange(element, { count: chars });
+
+          if (range) {
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }
+
+      static focusAt (position, element) {
+        Cursor.setCurrentCursorPosition(position, element);
+        element.focus();
+      }
+
+      static _createRange(node, chars, range) {
+        if (!range) {
+          range = document.createRange()
+          range.selectNode(node);
+          range.setStart(node, 0);
+        }
+
+        if (chars.count === 0) {
+          range.setEnd(node, chars.count);
+        } else if (node && chars.count >0) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            if (node.textContent.length < chars.count) {
+              chars.count -= node.textContent.length;
+            } else {
+              range.setEnd(node, chars.count);
+              chars.count = 0;
+            }
+          } else {
+            for (var lp = 0; lp < node.childNodes.length; lp++) {
+              range = Cursor._createRange(node.childNodes[lp], chars, range);
+
+              if (chars.count === 0) {
+                break;
+              }
+            }
+          }
+        }
+
+        return range;
+      }
+
+      static _isChildOf(node, parentElement) {
+        while (node !== null) {
+          if (node === parentElement) {
+            return true;
+          }
+          node = node.parentNode;
+        }
+
+        return false;
+      }
+    }
+  </script>
+  <script>
+    let messageEl = document.querySelector('#message');
+    function message (s, classes) {
+      if (s) {
+        messageEl.innerText = s;
+      } else {
+        messageEl.innerHTML = '&nbsp;';
+      }
+      messageEl.classList.remove(...messageEl.classList);
+      if (classes) {
+        messageEl.classList.add(classes);
+      }
+    }
+    message('initializing');
+
+    function runTests () {
+      let srcEl = document.querySelector('.src'),
+          outEl = document.querySelector('.output'),
+          dataEl = document.querySelector('.data'),
+          rawEl = document.querySelector('.raw'),
+          data = {},
+          dataSrc = (dataEl.innerText || '').trim() || '{}';
+      try {
+        data = JSON.parse(dataSrc);
+      } catch (e) {
+        message(`Data ${e.toString()}`, 'bad');
+        let match = /position (\d+)/.exec(e.message || '');
+        if (match) {
+          Cursor.focusAt(parseInt(match[1]), dataEl);
+        }
+      }
+
+      try {
+        let source = srcEl.innerText,
+            out = overtemplate(source)(data);
+        rawEl.innerText = out;
+        outEl.innerHTML = out;
+      } catch (ee) {
+        rawEl.innerHTML = '';
+        outEl.innerHTML = '';
+        let errEl = document.querySelector('.error');
+        errEl.innerText = ee.toString();
+      }
+    }
+
+    function loadModule () {
+      let url = new URL("./metadata.json", location.href);
+      // "https://cdn.jsdelivr.net/npm/@mscalora/overtemplate/package.json"
+      fetch(url).then(response => response.json())
+          .then(metadata => {
+            message(`overtemplate metadata loaded ${metadata.version}`);
+            console.log(`Version: ${metadata.version}`);
+            let el = document.createElement('script');
+            el.addEventListener('load', (evt) => {
+              message(`overtemplate package loaded ${metadata.version}`);
+              let start = Date.now(),
+                  timer = setInterval(() => {
+                let good = !!window.overtemplate;
+                if (good || Date.now()-start>5000) {
+                  clearInterval(timer);
+                  message(good ? `overtemplate ${metadata.version} loaded` : `overtemplate loaded failed`, good ? 'good' : 'bad');
+                  document.getElementById('render').disabled = !good;
+                  if (good) {
+                    renderExamples(metadata);
+                  }
+                }
+              }, 250);
+            });
+            let cdn = `https://cdn.jsdelivr.net/npm/@mscalora/overtemplate@${metadata.version}/dist/overtemplate.js`,
+                onPages = /\.github\.io/i.test(document.location.hostname),
+                src = onPages ? new URL(cdn) : new URL('../dist/overtemplate.js', document.location.href);
+            el.src = src;
+            document.body.appendChild(el);
+          });
+      message(`loading overtemplate metadata from jsdelivr`);
+    }
+
+    function renderExamples (md) {
+      window.filterExamples = md.examples;
+      let exEl = document.querySelector('.examples'),
+          tmplSrc = '<div class="ex-row" data-num="«- index »" onclick="clickExample(this);">' +
+              '<span class="ex-name">«- name »</span>' +
+              '<span class="ex-content"><%= «- template » %></span></div>',
+          tmpl = overtemplate(tmplSrc, {altSyntax: true});
+      for (let index = 0; index < md.examples.length; index++) {
+        let example = md.examples[index];
+        example.index = index;
+        exEl.insertAdjacentHTML('beforeend', tmpl(example));
+      }
+    }
+
+    function loadFilterExamples (version) {
+      let url = new URL("./filter-examples.json", location.href);
+      fetch(url).then(response => response.json()).then(data => {
+        console.log(JSON.stringify(data, null, 2));
+        window.filterExamples = data;
+        let exEl = document.querySelector('.examples'),
+            tmplSrc = '<div class="ex-row" data-num="«- index »" onclick="clickExample(this);">' +
+                '<span class="ex-name">«- name »</span>' +
+                '<span class="ex-content"><%= «- template » %></span></div>',
+            tmpl = overtemplate(tmplSrc, {altSyntax: true});
+        for (let index = 0; index < data.length; index++) {
+          let example = filterExamples[index];
+          example.index = index;
+          exEl.insertAdjacentHTML('beforeend', tmpl(example));
+        }
+      });
+    }
+
+    function clickExample (el) {
+      console.log(`Example ${el.dataset.num}`);
+      let example = filterExamples[el.dataset.num],
+          srcEl = document.querySelector('.src'),
+          outEl = document.querySelector('.output'),
+          rawEl = document.querySelector('.raw'),
+          dataEl = document.querySelector('.data');
+      srcEl.innerText = `<%= ${example.template} %>`;
+      dataEl.innerText = example.data ? JSON.stringify(example.data, null, 2) : '';
+      outEl.innerText = '';
+      rawEl.innerText = '';
+      srcEl.scrollIntoView({block: "center"});
+    }
+
+    loadModule();
+  </script>
+  <!--  <script src="https://cdn.jsdelivr.net/npm/@mscalora/overtemplate@"></script>-->
+</body>
+</html>

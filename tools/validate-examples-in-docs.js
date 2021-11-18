@@ -16,7 +16,8 @@ program.version('1.0.0')
 
 let projectPath = path.join(__dirname, '..'),
     files = program.args && program.args.length ? program.args : glob.sync(path.join(projectPath, 'docs', '**/*.md')),
-    fileNameMaxWidth = Math.max(...(files || []).map(f => path.basename(f).length));
+    fileNameMaxWidth = Math.max(...(files || []).map(f => path.basename(f).length)),
+    filterExamples = [];
 
 const cleaner = /^\s*(Syntax|Template|Data|Output):\s*(```|<code>)|(```|<\/code>)\s*(<br>\s*)?$/g;
 
@@ -41,14 +42,17 @@ for (let file of files) {
         exampleLineNum = i;
         template = tmplLine.replace(cleaner, '');
         dataSrc = dataLine && dataLine.replace(cleaner, '');
+        output = outputLine.replace(cleaner, '').replace(/&nbsp;/g, ' ');
         if (dataSrc) {
           try {
             eval('data = ' + dataSrc);
+            filterExamples.push({name: exampleName || '', template: template, data: data, output: outputLine});
           } catch (e) {
             cpl('red', 'Error:', e.message);
           }
+        } else {
+          filterExamples.push({name: exampleName || '', template: template, output: outputLine});
         }
-        output = outputLine.replace(cleaner, '').replace(/&nbsp;/g, ' ');
         try {
           let tmpl1 = overtemplate('<%-' + template + '%>'),
               tmpl2 = overtemplate('<%=' + template + '%>'),
@@ -138,6 +142,27 @@ for (let file of files) {
   }
 }
 
+let packageJson = fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'),
+    package = JSON.parse(packageJson),
+    keys = ["name", "description", "version", "author", "repository", "author"],
+    metadata = Object.keys(package).reduce((o,k) => {
+      if (keys.includes(k)) {
+        o[k] = package[k];
+      }
+      return o;
+    }, {examples: filterExamples});
+
+if (filterExamples.length) {
+  let exampleLines = JSON.stringify(metadata, null, 2),
+      examplesPath = path.join(__dirname, '../docs', "metadata.json"),
+      existingText = fs.existsSync(examplesPath) ? fs.readFileSync(examplesPath, 'utf8') : '',
+      needsUpdating = exampleLines !== existingText;
+
+  if (needsUpdating) {
+    fs.writeFileSync(examplesPath, exampleLines);
+  }
+}
+
 for (let filter of Object.keys(hasExampleMap)) {
   if (!hasExampleMap[filter]) {
     pl(`Example for filter ${chalk.red(filter)} not found`);
@@ -151,7 +176,6 @@ function isTag(line, tag) {
 function runExampleSync (nodeSrc, name, srcFileName, srcLineNum) {
   const modPath = fs.realpathSync(path.join(__dirname, '..')),
       preamble = `#! /usr/bin/env node
-//debugger;
 const overtemplate = require('${modPath}');
 `;
 
