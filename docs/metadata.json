@@ -354,7 +354,7 @@
     }
   ],
   "name": "@mscalora/overtemplate",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "Yet another replacement for _.template (underscore or lodash) without unsafe evals.",
   "repository": {
     "type": "git",
