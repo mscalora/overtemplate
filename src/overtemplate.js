@@ -55,29 +55,29 @@ const DEFAULT_FILTER_SEPARATOR = '|',
     DEFAULT_ALT_PARAMETER_SEPARATOR = '•',
     ALT_PARAMETER_SEPARATOR_REGEXP = new RegExp(DEFAULT_PARAMETER_SEPARATOR, 'g');
 
-const BUILT_IN_LOGIC = {
+const BUILTIN_LOGIC = {
   defaultNumberFormatter: function (n, _, __) { return `${n}`; },
   defaultDateFormatter: function (d, _, __) { return d.toLocaleString(); },
   defaultFormatter: defaultFormatter,
   defaultExpressionEvaluator: slightlySmarterGet,
 };
 
-const BUILT_IN_SYNTAX = {
+const BUILTIN_SYNTAX = {
   parameterSeparator: DEFAULT_PARAMETER_SEPARATOR,
   filterSeparator: DEFAULT_FILTER_SEPARATOR,
   altSyntax: false,
 };
 
-const BUILT_IN_ALT_SYNTAX = {
+const BUILTIN_ALT_SYNTAX = {
   parameterSeparator: DEFAULT_ALT_PARAMETER_SEPARATOR,
   filterSeparator: DEFAULT_ALT_FILTER_SEPARATOR,
   altSyntax: true,
 };
 
 const DEFAULT_LOGIC = {
-  numberFormatter: BUILT_IN_LOGIC.defaultNumberFormatter,
-  dateFormatter: BUILT_IN_LOGIC.defaultDateFormatter,
-  expressionEvaluator: BUILT_IN_LOGIC.defaultExpressionEvaluator,
+  numberFormatter: BUILTIN_LOGIC.defaultNumberFormatter,
+  dateFormatter: BUILTIN_LOGIC.defaultDateFormatter,
+  expressionEvaluator: BUILTIN_LOGIC.defaultExpressionEvaluator,
 };
 
 const ESCAPE_ENTITIES = {
@@ -308,8 +308,8 @@ function getParsingSettings (settings, useNamedParsing) {
  */
 function overtemplate (text, userSettings) {
   let parts = [],
-      builtInSyntax = userSettings && userSettings.altSyntax ? BUILT_IN_ALT_SYNTAX : BUILT_IN_SYNTAX,
-      settings = Object.assign({}, builtInSyntax, BUILT_IN_LOGIC, DEFAULT_LOGIC, userSettings || {}),
+      builtInSyntax = userSettings && userSettings.altSyntax ? BUILTIN_ALT_SYNTAX : BUILTIN_SYNTAX,
+      settings = Object.assign({}, builtInSyntax, BUILTIN_LOGIC, DEFAULT_LOGIC, userSettings || {}),
       regExpPattern,
       matcher,
       match,
